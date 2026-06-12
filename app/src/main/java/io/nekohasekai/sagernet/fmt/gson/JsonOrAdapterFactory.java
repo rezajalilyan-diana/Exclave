@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
+import android.util.Log;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -43,7 +44,8 @@ public class JsonOrAdapterFactory implements TypeAdapterFactory {
             JsonOr<?, ?> instance = (JsonOr<?, ?>) type.getRawType().newInstance();
             return new JsonOrAdapter(gson, TypeToken.get(args[0]), TypeToken.get(args[1]), type, instance.tokenX, instance.tokenY);
         } catch (Exception e) {
-            e.printStackTrace();
+            // اصلاح: جایگزینی printStackTrace با Android Log.e
+            Log.e("JsonOrAdapterFactory", "Failed to create JsonOr adapter instance", e);
             throw new RuntimeException(e);
         }
     }
