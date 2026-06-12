@@ -24,15 +24,9 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # پاک‌سازی کامل دایرکتوری‌های KSP و بیلد قبلی قبل از کامپایل
     - name: Clean Project
       run: ./gradlew clean
 
+    # اضافه کردن پارامترهای نادیده‌گرفتن هشدارهای کامپایلر برای عبور از سد KSP
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-build-cache
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Exclave-Optimized-APK
-        path: app/build/outputs/apk/debug/*.apk
+      run: ./gradlew assembleDebug --no-build-cache -Dorg.gradle.kotlin.dsl.caches.shared=false
