@@ -323,5 +323,8 @@ class SagerNet : Application(),
             application.sendBroadcast(Intent(Action.CLOSE).setPackage(application.packageName))
 
     }
-
+override fun onTerminate() {
+    AppScope.cancel()
+    super.onTerminate()
+}
 }
