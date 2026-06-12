@@ -24,17 +24,9 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # پاک‌سازی فیزیکی و ریشه‌ای تمام کش‌های مخفی کامپایلر و KSP روی دیسک رانر
-    - name: Absolute Hard Clean
-      run: |
-        rm -rf .gradle
-        rm -rf build
-        rm -rf app/build
-        rm -rf plugin/api/build
-        rm -rf plugin/naive/build
-        rm -rf library/proto-stub/build
-        ./gradlew clean
+    - name: Clean Project
+      run: ./gradlew clean
 
-    # فرآیند بیلد تمیز و اجبار به عدم استفاده از کش‌های سیستم‌عاملی قبلی
+    # بیلد نهایی پروژه بدون تداخل کدهای ساختاری با پردازنده KSP
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-build-cache --stacktrace -x lint -x test
+      run: ./gradlew assembleDebug --no-build-cache -x lint -x test
