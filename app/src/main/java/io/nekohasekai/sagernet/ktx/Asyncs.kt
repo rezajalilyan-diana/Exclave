@@ -23,25 +23,45 @@ package io.nekohasekai.sagernet.ktx
 
 import kotlinx.coroutines.*
 
+// ─────────────────────────────────────────────────────────────────────────────
+// اصلاح ۳: جایگزینی GlobalScope با AppScope
+//
+// مشکل قبلی: GlobalScope.launch یعنی coroutine به هیچ lifecycle ای
+// متصل نیست. اگر application در حالت خاصی باشد یا Job والد cancel شود،
+// این coroutine‌ها بدون کنترل ادامه می‌دهند و می‌توانند memory leak
+// یا crash های غیرمنتظره ایجاد کنند.
+//
+// راه‌حل: تعریف AppScope با SupervisorJob که:
+//   ۱. همه coroutine‌های app زیر یک Job واحد هستند
+//   ۲. با SupervisorJob، خرابی یک coroutine بقیه را cancel نمی‌کند
+//   ۳. در صورت نیاز می‌توان در Application.onTerminate آن را cancel کرد
+//
+// نحوه استفاده در SagerNet.kt:
+//   override fun onTerminate() {
+//       AppScope.cancel()
+//       super.onTerminate()
+//   }
+// ─────────────────────────────────────────────────────────────────────────────
+val AppScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
 fun block(block: suspend CoroutineScope.() -> Unit): suspend CoroutineScope.() -> Unit {
     return block
 }
 
 fun runOnDefaultDispatcher(block: suspend CoroutineScope.() -> Unit) =
-    GlobalScope.launch(Dispatchers.Default, block = block)
+    AppScope.launch(Dispatchers.Default, block = block)
 
 suspend fun <T> onDefaultDispatcher(block: suspend CoroutineScope.() -> T) =
     withContext(Dispatchers.Default, block = block)
 
 fun runOnIoDispatcher(block: suspend CoroutineScope.() -> Unit) =
-    GlobalScope.launch(Dispatchers.IO, block = block)
+    AppScope.launch(Dispatchers.IO, block = block)
 
 suspend fun <T> onIoDispatcher(block: suspend CoroutineScope.() -> T) =
     withContext(Dispatchers.IO, block = block)
 
 fun runOnMainDispatcher(block: suspend CoroutineScope.() -> Unit) =
-    GlobalScope.launch(Dispatchers.Main.immediate, block = block)
+    AppScope.launch(Dispatchers.Main.immediate, block = block)
 
 suspend fun <T> onMainDispatcher(block: suspend CoroutineScope.() -> T) =
     withContext(Dispatchers.Main.immediate, block = block)
-
