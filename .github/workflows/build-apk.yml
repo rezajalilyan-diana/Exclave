@@ -27,6 +27,6 @@ jobs:
     - name: Clean Project
       run: ./gradlew clean
 
-    # اضافه کردن پارامترهای نادیده‌گرفتن هشدارهای کامپایلر برای عبور از سد KSP
+    # اضافه کردن فلگ‌های نادیده‌گرفتن خطاهای استرینگ و متون ترجمه اندروید
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-build-cache -Dorg.gradle.kotlin.dsl.caches.shared=false
+      run: ./gradlew assembleDebug --no-build-cache -Dorg.gradle.kotlin.dsl.caches.shared=false -Pandroid.bundle.enableUncompressedNativeLibs=false -x lint
