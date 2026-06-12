@@ -27,6 +27,5 @@ jobs:
     - name: Clean Project
       run: ./gradlew clean
 
-    # تزریق مستقیم دستور لغو سخت‌گیری‌های KSP برای عبور مستقیم از سد ارور MissingType
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-build-cache -Pksp.allow.missing.types=true -x lint -x test
+      run: ./gradlew assembleDebug --no-build-cache -x lint -x test
