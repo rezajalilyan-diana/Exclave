@@ -28,7 +28,6 @@ abstract class SagerDatabase : RoomDatabase() {
     abstract fun ruleDao(): RuleDao
 
     companion object {
-        // تردپول مدیریت‌شده و بهینه ما برای جلوگیری از نشت حافظه
         val queryExecutor = Executors.newCachedThreadPool()
 
         val instance by lazy {
@@ -39,7 +38,7 @@ abstract class SagerDatabase : RoomDatabase() {
             )
                 .setQueryExecutor(queryExecutor)
                 .allowMainThreadQueries()
-                .addMigrations(*MIGRATIONS) // ارجاع مستقیم به آرایه میگریشن‌ها
+                .addMigrations(*MIGRATIONS)
                 .build()
         }
 
@@ -49,7 +48,7 @@ abstract class SagerDatabase : RoomDatabase() {
         val routingDao get() = instance.routingDao()
         val ruleDao get() = instance.ruleDao()
 
-        // تعریف دقیق آرایه میگریشن که KSP برای کامپایل به آن نیاز دارد
+        // تعریف آرایه به صورت مستقیم در بدنه Companion Object جهت استفاده بدون نقص در KSP
         val MIGRATIONS = arrayOf<androidx.room.migration.Migration>()
     }
 }
