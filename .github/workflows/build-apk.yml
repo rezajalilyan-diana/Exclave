@@ -8,23 +8,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    # تنظیم متغیر محیطی گیت‌هاب در سطح کل جاب برای هماهنگی کامل با Node 24
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
+    # استفاده از نسخه v5 (بتا/پایدار جدید) که کاملاً با نود ۲۴ سازگار است
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         submodules: 'recursive'
 
+    # استفاده از نسخه v5.0.0 یا بالاتر برای جاوا جهت حذف کامل وارنینگ نود
     - name: Set up JDK 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         java-version: '17'
         distribution: 'zulu'
-        # حذف موقت کش برای برطرف کردن خطای سرور Cache 400
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
