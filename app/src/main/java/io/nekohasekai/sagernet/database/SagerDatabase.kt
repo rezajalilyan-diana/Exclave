@@ -5,7 +5,6 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import io.nekohasekai.sagernet.SagerNet
-import io.nekohasekai.sagernet.database.SagerDatabase.Migration
 import java.util.concurrent.Executors
 
 @Database(
@@ -16,7 +15,7 @@ import java.util.concurrent.Executors
         RoutingEntity::class,
         RuleEntity::class
     ],
-    version = 3 /* Matsuri */,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -29,9 +28,7 @@ abstract class SagerDatabase : RoomDatabase() {
     abstract fun ruleDao(): RuleDao
 
     companion object {
-
-        // استفاده از یک CachedThreadPool بهینه به جای GlobalScope یا اسکوپ‌های نامحدود
-        // این کار باعث مدیریت صحیح تردها در زمان اجرای کوئری‌های دیتابیس می‌شود
+        // تردپول بهینه شده برای عملیات دیتابیس
         val queryExecutor = Executors.newCachedThreadPool()
 
         val instance by lazy {
@@ -40,8 +37,8 @@ abstract class SagerDatabase : RoomDatabase() {
                 SagerDatabase::class.java,
                 "sager"
             )
-                .setQueryExecutor(queryExecutor) // اعمال تردپول بهینه شده
-                .allowMainThreadQueries() // Matsuri/SagerNet پایه به این نیاز دارد، اما کوئری‌ها روی این تردپول هندل می‌شوند
+                .setQueryExecutor(queryExecutor)
+                .allowMainThreadQueries()
                 .addMigrations(*Migration.MIGRATIONS)
                 .build()
         }
@@ -54,7 +51,6 @@ abstract class SagerDatabase : RoomDatabase() {
     }
 
     object Migration {
-        // بخش مربوط به ارتقاء دیتابیس (Migrations) بدون تغییر باقی می‌ماند
         val MIGRATIONS = arrayOf<androidx.room.migration.Migration>()
     }
 }
