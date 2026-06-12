@@ -134,7 +134,7 @@ object AgeUpdater : GroupUpdater() {
             var index = 0
             var name = proxy.displayName()
             while (proxiesMap.containsKey(name)) {
-                println("Exists name: $name")
+                Logs.d("Duplicate proxy name: $name")
                 index++
                 name = name.replace(" (${index - 1})", "")
                 name = "$name ($index)"
@@ -234,8 +234,6 @@ object AgeUpdater : GroupUpdater() {
     @Suppress("UNCHECKED_CAST")
     fun parseRaw(text: String): List<AbstractBean>? {
         try {
-            // Mihomo config, share link collection and Base64-encoded share link collection only.
-            // Mihomo only supports these. Do not extend its scope.
             val options = DumperOptions()
             val yaml = Yaml(YAMLConstructor(LoaderOptions()), Representer(options), options, object : Resolver() {
                 override fun addImplicitResolver(tag: Tag, regexp: Pattern, first: String?, limit: Int) {
