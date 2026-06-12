@@ -26,7 +26,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import io.nekohasekai.sagernet.Key
 import io.nekohasekai.sagernet.SagerNet
-import kotlinx.coroutines.GlobalScope
+import io.nekohasekai.sagernet.ktx.AppScope
 import kotlinx.coroutines.launch
 
 @Database(
@@ -41,7 +41,8 @@ abstract class PublicDatabase : RoomDatabase() {
                 .allowMainThreadQueries()
                 .enableMultiInstanceInvalidation()
                 .fallbackToDestructiveMigration()
-                .setQueryExecutor { GlobalScope.launch { it.run() } }
+                // اصلاح: جایگزینی GlobalScope با AppScope
+                .setQueryExecutor { AppScope.launch { it.run() } }
                 .build()
         }
 
