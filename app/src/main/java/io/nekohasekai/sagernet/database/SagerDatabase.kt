@@ -24,7 +24,7 @@ import io.nekohasekai.sagernet.Key
 import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.fmt.KryoConverters
 import io.nekohasekai.sagernet.fmt.gson.GsonConverters
-import kotlinx.coroutines.GlobalScope
+import io.nekohasekai.sagernet.ktx.AppScope
 import kotlinx.coroutines.launch
 
 @Database(
@@ -127,7 +127,10 @@ abstract class SagerDatabase : RoomDatabase() {
                 .fallbackToDestructiveMigrationOnDowngrade()
                 .allowMainThreadQueries()
                 .enableMultiInstanceInvalidation()
-                .setQueryExecutor { GlobalScope.launch { it.run() } }
+                // 丕氐賱丕丨: 噩丕蹖诏夭蹖賳蹖 GlobalScope 亘丕 AppScope
+                // GlobalScope 亘賴 lifecycle 賴蹖趩 component鈥屫й� 賲鬲氐賱 賳蹖爻鬲.
+                // AppScope (鬲毓乇蹖賮鈥屫簇� 丿乇 Asyncs.kt) 夭蹖乇 SupervisorJob 丕倬 賯乇丕乇 丿丕乇丿.
+                .setQueryExecutor { AppScope.launch { it.run() } }
                 .build()
         }
 
