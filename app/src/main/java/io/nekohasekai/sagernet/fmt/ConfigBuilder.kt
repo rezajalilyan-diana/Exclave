@@ -121,6 +121,7 @@ import io.nekohasekai.sagernet.ktx.parseJson
 import io.nekohasekai.sagernet.ktx.toHysteriaPort
 import io.nekohasekai.sagernet.ktx.unescapeLineFeed
 import io.nekohasekai.sagernet.ktx.uuidOrGenerate
+import io.nekohasekai.sagernet.ktx.Logs
 import io.nekohasekai.sagernet.utils.PackageCache
 import kotlin.io.encoding.Base64
 import libexclavecore.Libexclavecore
@@ -2258,7 +2259,9 @@ fun buildV2RayConfig(
                             @Suppress("DEPRECATION")
                             Settings.Secure.getInt(app.contentResolver, Settings.Secure.LOCATION_MODE) != Settings.Secure.LOCATION_MODE_OFF
                         } catch (e: Settings.SettingNotFoundException) {
-                            e.printStackTrace()
+                            // 丕氐賱丕丨: 噩丕蹖诏夭蹖賳蹖 printStackTrace 亘丕 Logs.w
+                            // 丕蹖賳 exception 丕賳鬲馗丕乇蹖 丕爻鬲 乇賵蹖 丿爻鬲诏丕賴鈥屬囏й� 賯丿蹖賲蹖鈥屫� 丕夭 Android P
+                            Logs.w("Could not read LOCATION_MODE setting", e)
                             false
                         }
                     }
