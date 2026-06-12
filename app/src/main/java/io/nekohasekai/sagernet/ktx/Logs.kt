@@ -20,67 +20,64 @@
 package io.nekohasekai.sagernet.ktx
 
 import android.util.Log
+import io.nekohasekai.sagernet.BuildConfig
 import java.io.InputStream
 import java.io.OutputStream
 
 object Logs {
 
-    private fun mkTag(): String {
-        val stackTrace = Thread.currentThread().stackTrace
-        return stackTrace[4].className.substringAfterLast(".")
-    }
+    // ─────────────────────────────────────────────────────────────────────────
+    // اصلاح ۱: حذف Thread.currentThread().stackTrace از هر فراخوانی لاگ
+    //
+    // مشکل قبلی: mkTag() در هر لاگ یک stackTrace کامل می‌گرفت که عملیات
+    // بسیار گران‌قیمتی است (allocation آرایه + پیمایش call stack).
+    // در یک VPN service که لاگ‌های مکرر دارد، این overhead محسوس بود.
+    //
+    // راه‌حل: استفاده از یک TAG ثابت برای کل object.
+    // اگر نیاز به نام caller دارید، می‌توانید TAG را به صورت پارامتر پاس دهید.
+    // ─────────────────────────────────────────────────────────────────────────
+    private const val TAG = "Exclave"
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // اصلاح ۲: فعال‌سازی گارد BuildConfig.DEBUG برای سطوح v و d
+    //
+    // مشکل قبلی: گاردهای if (BuildConfig.DEBUG) کامنت شده بودند،
+    // یعنی لاگ‌های verbose و debug در build های release هم چاپ می‌شدند.
+    //
+    // راه‌حل: فعال‌سازی گارد. در release build این توابع هیچ کاری نمی‌کنند
+    // و کامپایلر R8 کل بدنه آن‌ها را inline و حذف می‌کند.
+    // ─────────────────────────────────────────────────────────────────────────
 
     fun v(message: String) {
-        //  if (BuildConfig.DEBUG) {
-        Log.v(mkTag(), message)
-//        }
+        if (BuildConfig.DEBUG) Log.v(TAG, message)
     }
 
     fun v(message: String, exception: Throwable) {
-        //  if (BuildConfig.DEBUG) {
-        Log.v(mkTag(), message, exception)
-//        }
+        if (BuildConfig.DEBUG) Log.v(TAG, message, exception)
     }
 
     fun d(message: String) {
-        //  if (BuildConfig.DEBUG) {
-        Log.d(mkTag(), message)
-//        }
+        if (BuildConfig.DEBUG) Log.d(TAG, message)
     }
 
     fun d(message: String, exception: Throwable) {
-        //  if (BuildConfig.DEBUG) {
-        Log.d(mkTag(), message, exception)
-//        }
+        if (BuildConfig.DEBUG) Log.d(TAG, message, exception)
     }
 
-    fun i(message: String) {
-        Log.i(mkTag(), message)
-    }
+    // سطوح i، w، e همیشه فعالند (حتی در release) چون اطلاعات مهم دارند
+    fun i(message: String) = Log.i(TAG, message)
 
-    fun i(message: String, exception: Throwable) {
-        Log.i(mkTag(), message, exception)
-    }
+    fun i(message: String, exception: Throwable) = Log.i(TAG, message, exception)
 
-    fun w(message: String) {
-        Log.w(mkTag(), message)
-    }
+    fun w(message: String) = Log.w(TAG, message)
 
-    fun w(message: String, exception: Throwable) {
-        Log.w(mkTag(), message, exception)
-    }
+    fun w(message: String, exception: Throwable) = Log.w(TAG, message, exception)
 
-    fun w(exception: Throwable) {
-        Log.w(mkTag(), exception)
-    }
+    fun w(exception: Throwable) = Log.w(TAG, exception)
 
-    fun e(message: String) {
-        Log.e(mkTag(), message)
-    }
+    fun e(message: String) = Log.e(TAG, message)
 
-    fun e(message: String, exception: Throwable) {
-        Log.e(mkTag(), message, exception)
-    }
+    fun e(message: String, exception: Throwable) = Log.e(TAG, message, exception)
 
 }
 
