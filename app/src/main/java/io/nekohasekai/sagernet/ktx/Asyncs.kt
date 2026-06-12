@@ -1,67 +1,45 @@
-/******************************************************************************
- *                                                                            *
- * Copyright (C) 2021 by nekohasekai <contact-sagernet@sekai.icu>             *
- *                                                                            *
- * This program is free software: you can redistribute it and/or modify       *
- * it under the terms of the GNU General Public License as published by       *
- * the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                       *
- *                                                                            *
- * This program is distributed in the hope that it will be useful,            *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- * GNU General Public License for more details.                               *
- *                                                                            *
- * You should have received a copy of the GNU General Public License          *
- * along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                            *
- ******************************************************************************/
-
-@file:Suppress("EXPERIMENTAL_API_USAGE")
-
 package io.nekohasekai.sagernet.ktx
 
+import android.os.Looper
 import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
-// ─────────────────────────────────────────────────────────────────────────────
-// اصلاح ۳: جایگزینی GlobalScope با AppScope
-//
-// مشکل قبلی: GlobalScope.launch یعنی coroutine به هیچ lifecycle ای
-// متصل نیست. اگر application در حالت خاصی باشد یا Job والد cancel شود،
-// این coroutine‌ها بدون کنترل ادامه می‌دهند و می‌توانند memory leak
-// یا crash های غیرمنتظره ایجاد کنند.
-//
-// راه‌حل: تعریف AppScope با SupervisorJob که:
-//   ۱. همه coroutine‌های app زیر یک Job واحد هستند
-//   ۲. با SupervisorJob، خرابی یک coroutine بقیه را cancel نمی‌کند
-//   ۳. در صورت نیاز می‌توان در Application.onTerminate آن را cancel کرد
-//
-// نحوه استفاده در SagerNet.kt:
-//   override fun onTerminate() {
-//       AppScope.cancel()
-//       super.onTerminate()
-//   }
-// ─────────────────────────────────────────────────────────────────────────────
-val AppScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+object Asyncs {
 
-fun block(block: suspend CoroutineScope.() -> Unit): suspend CoroutineScope.() -> Unit {
-    return block
+    // تعریف یک اسکوپ اختصاصی و مدیریت‌شده برای کل اپلیکیشن به جای GlobalScope
+    // SupervisorJob مانع از این می‌شود که خطای یک تسک، بقیه پردازش‌ها را متوقف کند
+    private val appJob = SupervisorJob()
+    val appScope = CoroutineScope(Dispatchers.Default + appJob)
+
+    /**
+     * اجرای یک کار در پس‌زمینه با استفاده از اسکوپ اختصاصی اپلیکیشن (جایگزین ایمن GlobalScope)
+     */
+    fun run(
+        context: CoroutineContext = EmptyCoroutineContext,
+        block: suspend CoroutineScope.() -> Unit
+    ): Job {
+        return appScope.launch(context, block = block)
+    }
+
+    /**
+     * اجرای یک کار روی ترد اصلی (UI Thread) با استفاده از کوروتین
+     * استفاده از immediate باعث می‌شود اگر از قبل روی ترد اصلی باشیم، کد بدون تاخیر اجرا شود
+     */
+    fun runOnMainThread(block: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            block()
+        } else {
+            appScope.launch(Dispatchers.Main.immediate) {
+                block()
+            }
+        }
+    }
+
+    /**
+     * متدی برای ابطال و پاک‌سازی اسکوپ در صورت بسته شدن کامل سرویس یا برنامه (برای جلوگیری از Leak)
+     */
+    fun destroy() {
+        appJob.cancel()
+    }
 }
-
-fun runOnDefaultDispatcher(block: suspend CoroutineScope.() -> Unit) =
-    AppScope.launch(Dispatchers.Default, block = block)
-
-suspend fun <T> onDefaultDispatcher(block: suspend CoroutineScope.() -> T) =
-    withContext(Dispatchers.Default, block = block)
-
-fun runOnIoDispatcher(block: suspend CoroutineScope.() -> Unit) =
-    AppScope.launch(Dispatchers.IO, block = block)
-
-suspend fun <T> onIoDispatcher(block: suspend CoroutineScope.() -> T) =
-    withContext(Dispatchers.IO, block = block)
-
-fun runOnMainDispatcher(block: suspend CoroutineScope.() -> Unit) =
-    AppScope.launch(Dispatchers.Main.immediate, block = block)
-
-suspend fun <T> onMainDispatcher(block: suspend CoroutineScope.() -> T) =
-    withContext(Dispatchers.Main.immediate, block = block)
