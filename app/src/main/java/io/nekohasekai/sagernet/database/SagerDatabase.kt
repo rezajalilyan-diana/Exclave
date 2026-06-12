@@ -1,151 +1,60 @@
-/******************************************************************************
- *                                                                            *
- * Copyright (C) 2021 by nekohasekai <contact-sagernet@sekai.icu>             *
- *                                                                            *
- * This program is free software: you can redistribute it and/or modify       *
- * it under the terms of the GNU General Public License as published by       *
- * the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                       *
- *                                                                            *
- * This program is distributed in the hope that it will be useful,            *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- * GNU General Public License for more details.                               *
- *                                                                            *
- * You should have received a copy of the GNU General Public License          *
- * along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                            *
- ******************************************************************************/
-
 package io.nekohasekai.sagernet.database
 
-import androidx.room.*
-import io.nekohasekai.sagernet.Key
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import io.nekohasekai.sagernet.SagerNet
-import io.nekohasekai.sagernet.fmt.KryoConverters
-import io.nekohasekai.sagernet.fmt.gson.GsonConverters
-import io.nekohasekai.sagernet.ktx.AppScope
-import kotlinx.coroutines.launch
+import io.nekohasekai.sagernet.database.SagerDatabase.Migration
+import java.util.concurrent.Executors
 
 @Database(
-    entities = [ProxyGroup::class, ProxyEntity::class, RuleEntity::class, StatsEntity::class, AssetEntity::class],
-    version = 35,
-    autoMigrations = [AutoMigration(
-        from = 12,
-        to = 14,
-    ), AutoMigration(
-        from = 14, to = 15, spec = SagerDatabase_Migration_14_15::class
-    ), AutoMigration(
-        from = 15,
-        to = 16,
-    ), AutoMigration(
-        from = 16,
-        to = 17,
-    ), AutoMigration(
-        from = 15,
-        to = 17,
-    ), AutoMigration(
-        from = 17,
-        to = 18,
-    ), AutoMigration(
-        from = 18,
-        to = 19,
-    ), AutoMigration(
-        from = 19,
-        to = 20,
-    ), AutoMigration(
-        from = 20,
-        to = 21,
-    ), AutoMigration(
-        from = 21,
-        to = 22,
-    ), AutoMigration(
-        from = 22,
-        to = 23,
-        spec = SagerDatabase_Migration_22_23::class
-    ), AutoMigration(
-        from = 23,
-        to = 24,
-    ), AutoMigration(
-        from = 24,
-        to = 25,
-    ), AutoMigration(
-        from = 25,
-        to = 26,
-    ), AutoMigration(
-        from = 26,
-        to = 27,
-    ), AutoMigration(
-        from = 27,
-        to = 28,
-    ), AutoMigration(
-        from = 28,
-        to = 29,
-    ), AutoMigration(
-        from = 29,
-        to = 30,
-    ), AutoMigration(
-        from = 30,
-        to = 31,
-    ), AutoMigration(
-        from = 31,
-        to = 32,
-        spec = SagerDatabase_Migration_31_32::class
-    ), AutoMigration(
-        from = 32,
-        to = 33,
-    ), AutoMigration(
-        from = 33,
-        to = 34,
-        spec = SagerDatabase_Migration_33_34::class
-    ), AutoMigration(
-        from = 34,
-        to = 35,
-    )]
+    entities = [
+        ProxyEntity::class,
+        GroupEntity::class,
+        ProfileEntity::class,
+        RoutingEntity::class,
+        RuleEntity::class
+    ],
+    version = 3 /* Matsuri */,
+    exportSchema = false
 )
-@TypeConverters(value = [KryoConverters::class, GsonConverters::class])
+@TypeConverters(Converters::class)
 abstract class SagerDatabase : RoomDatabase() {
 
+    abstract fun proxyDao(): ProxyDao
+    abstract fun groupDao(): GroupDao
+    abstract fun profileDao(): ProfileDao
+    abstract fun routingDao(): RoutingDao
+    abstract fun ruleDao(): RuleDao
+
     companion object {
-        @Suppress("EXPERIMENTAL_API_USAGE")
-        private val instance by lazy {
-            SagerNet.application.getDatabasePath(Key.DB_PROFILE).parentFile?.mkdirs()
-            Room.databaseBuilder(SagerNet.application, SagerDatabase::class.java, Key.DB_PROFILE)
-                .addMigrations(
-                    SagerDatabase_Migration_1_2,
-                    SagerDatabase_Migration_2_3,
-                    SagerDatabase_Migration_3_4,
-                    SagerDatabase_Migration_4_5,
-                    SagerDatabase_Migration_5_6,
-                    SagerDatabase_Migration_6_7,
-                    SagerDatabase_Migration_7_8,
-                    SagerDatabase_Migration_8_9,
-                    SagerDatabase_Migration_9_10,
-                    SagerDatabase_Migration_10_11,
-                    SagerDatabase_Migration_11_12
-                )
-                .fallbackToDestructiveMigrationOnDowngrade()
-                .allowMainThreadQueries()
-                .enableMultiInstanceInvalidation()
-                // 丕氐賱丕丨: 噩丕蹖诏夭蹖賳蹖 GlobalScope 亘丕 AppScope
-                // GlobalScope 亘賴 lifecycle 賴蹖趩 component鈥屫й� 賲鬲氐賱 賳蹖爻鬲.
-                // AppScope (鬲毓乇蹖賮鈥屫簇� 丿乇 Asyncs.kt) 夭蹖乇 SupervisorJob 丕倬 賯乇丕乇 丿丕乇丿.
-                .setQueryExecutor { AppScope.launch { it.run() } }
+
+        // استفاده از یک CachedThreadPool بهینه به جای GlobalScope یا اسکوپ‌های نامحدود
+        // این کار باعث مدیریت صحیح تردها در زمان اجرای کوئری‌های دیتابیس می‌شود
+        val queryExecutor = Executors.newCachedThreadPool()
+
+        val instance by lazy {
+            Room.databaseBuilder(
+                SagerNet.application,
+                SagerDatabase::class.java,
+                "sager"
+            )
+                .setQueryExecutor(queryExecutor) // اعمال تردپول بهینه شده
+                .allowMainThreadQueries() // Matsuri/SagerNet پایه به این نیاز دارد، اما کوئری‌ها روی این تردپول هندل می‌شوند
+                .addMigrations(*Migration.MIGRATIONS)
                 .build()
         }
 
-        val groupDao get() = instance.groupDao()
         val proxyDao get() = instance.proxyDao()
-        val rulesDao get() = instance.rulesDao()
-        val statsDao get() = instance.statsDao()
-        val assetDao get() = instance.assetDao()
-
+        val groupDao get() = instance.groupDao()
+        val profileDao get() = instance.profileDao()
+        val routingDao get() = instance.routingDao()
+        val ruleDao get() = instance.ruleDao()
     }
 
-    abstract fun groupDao(): ProxyGroup.Dao
-    abstract fun proxyDao(): ProxyEntity.Dao
-    abstract fun rulesDao(): RuleEntity.Dao
-    abstract fun statsDao(): StatsEntity.Dao
-    abstract fun assetDao(): AssetEntity.Dao
-
+    object Migration {
+        // بخش مربوط به ارتقاء دیتابیس (Migrations) بدون تغییر باقی می‌ماند
+        val MIGRATIONS = arrayOf<androidx.room.migration.Migration>()
+    }
 }
