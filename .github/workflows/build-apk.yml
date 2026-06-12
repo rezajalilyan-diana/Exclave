@@ -10,17 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # استفاده از نسخه v5 (بتا/پایدار جدید) که کاملاً با نود ۲۴ سازگار است
     - name: Checkout Repository
       uses: actions/checkout@v5
       with:
         submodules: 'recursive'
 
-    # استفاده از نسخه v5.0.0 یا بالاتر برای جاوا جهت حذف کامل وارنینگ نود
-    - name: Set up JDK 17
+    # ارتقاء نسخه جاوا به 21 برای هماهنگی با ماژول‌های پروژه
+    - name: Set up JDK 21
       uses: actions/setup-java@v5
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'zulu'
 
     - name: Grant execute permission for gradlew
