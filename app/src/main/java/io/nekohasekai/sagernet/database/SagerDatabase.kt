@@ -33,7 +33,6 @@ abstract class SagerDatabase : RoomDatabase() {
                 SagerDatabase::class.java,
                 "sager"
             )
-                .allowMainThreadQueries()
                 .addMigrations(*Migration.MIGRATIONS)
                 .build()
         }
