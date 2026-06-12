@@ -1,4 +1,4 @@
-/******************************************************************************
+    /******************************************************************************
  *                                                                            *
  * Copyright (C) 2021 by nekohasekai <contact-sagernet@sekai.icu>             *
  * Copyright (C) 2021 by Max Lv <max.c.lv@gmail.com>                          *
@@ -32,6 +32,7 @@ import io.nekohasekai.sagernet.Key
 import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.aidl.*
 import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.ktx.Logs
 import io.nekohasekai.sagernet.ktx.runOnMainDispatcher
 
 class SagerConnection(private var listenForDeath: Boolean = false) : ServiceConnection,
@@ -154,7 +155,8 @@ class SagerConnection(private var listenForDeath: Boolean = false) : ServiceConn
                 serviceCallback, trafficTimeout
             )
         } catch (e: RemoteException) {
-            e.printStackTrace()
+            // 丕氐賱丕丨: 噩丕蹖诏夭蹖賳蹖 printStackTrace 亘丕 Logs.e 亘乇丕蹖 賲爻蹖乇丿賴蹖 氐丨蹖丨 亘賴 logcat
+            Logs.e("Failed to register service callback", e)
         }
         callback!!.onServiceConnected(service)
     }
