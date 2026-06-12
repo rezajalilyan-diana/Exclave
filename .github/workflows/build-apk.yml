@@ -5,22 +5,20 @@ on:
     branches: [ "dev", "main" ]
   workflow_dispatch:
 
-# تعریف متغیر محیطی برای سوییچ اجباری به Node.js 24 روی رانر گیت‌هاب
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+    # آپدیت به نسخه v4.2.2 که رسماً با رانرهای جدید هماهنگ است
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.2.2
       with:
         submodules: 'recursive'
 
+    # آپدیت به نسخه v4.3.0 یا بالاتر که مشکل Node.js 20 را کاملاً برطرف کرده
     - name: Set up JDK 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v4.3.0
       with:
         java-version: '17'
         distribution: 'zulu'
