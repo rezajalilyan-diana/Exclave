@@ -1,90 +1,85 @@
-/******************************************************************************
- *                                                                            *
- * Copyright (C) 2021 by nekohasekai <contact-sagernet@sekai.icu>             *
- *                                                                            *
- * This program is free software: you can redistribute it and/or modify       *
- * it under the terms of the GNU General Public License as published by       *
- * the Free Software Foundation, either version 3 of the License, or          *
- *  (at your option) any later version.                                       *
- *                                                                            *
- * This program is distributed in the hope that it will be useful,            *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of             *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              *
- * GNU General Public License for more details.                               *
- *                                                                            *
- * You should have received a copy of the GNU General Public License          *
- * along with this program. If not, see <http://www.gnu.org/licenses/>.       *
- *                                                                            *
- ******************************************************************************/
-
 package io.nekohasekai.sagernet.ktx
 
 import android.util.Log
 import io.nekohasekai.sagernet.BuildConfig
-import java.io.InputStream
-import java.io.OutputStream
+import java.util.concurrent.ConcurrentHashMap
 
 object Logs {
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // اصلاح ۱: حذف Thread.currentThread().stackTrace از هر فراخوانی لاگ
-    //
-    // مشکل قبلی: mkTag() در هر لاگ یک stackTrace کامل می‌گرفت که عملیات
-    // بسیار گران‌قیمتی است (allocation آرایه + پیمایش call stack).
-    // در یک VPN service که لاگ‌های مکرر دارد، این overhead محسوس بود.
-    //
-    // راه‌حل: استفاده از یک TAG ثابت برای کل object.
-    // اگر نیاز به نام caller دارید، می‌توانید TAG را به صورت پارامتر پاس دهید.
-    // ─────────────────────────────────────────────────────────────────────────
-    private const val TAG = "Exclave"
+    private const val PREFIX = "SagerNet:"
+    
+    // فعال یا غیرفعال بودن لاگ‌های دباگ بر اساس وضعیت گریدل پروژه
+    private val IS_DEBUG = BuildConfig.DEBUG
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // اصلاح ۲: فعال‌سازی گارد BuildConfig.DEBUG برای سطوح v و d
-    //
-    // مشکل قبلی: گاردهای if (BuildConfig.DEBUG) کامنت شده بودند،
-    // یعنی لاگ‌های verbose و debug در build های release هم چاپ می‌شدند.
-    //
-    // راه‌حل: فعال‌سازی گارد. در release build این توابع هیچ کاری نمی‌کنند
-    // و کامپایلر R8 کل بدنه آن‌ها را inline و حذف می‌کند.
-    // ─────────────────────────────────────────────────────────────────────────
+    // یک کش سریع برای ذخیره نام کلاس‌ها تا نیازی نباشد هر بار استک‌تریس کاوش شود
+    private val tagCache = ConcurrentHashMap<String, String>()
 
-    fun v(message: String) {
-        if (BuildConfig.DEBUG) Log.v(TAG, message)
-    }
-
-    fun v(message: String, exception: Throwable) {
-        if (BuildConfig.DEBUG) Log.v(TAG, message, exception)
-    }
-
-    fun d(message: String) {
-        if (BuildConfig.DEBUG) Log.d(TAG, message)
-    }
-
-    fun d(message: String, exception: Throwable) {
-        if (BuildConfig.DEBUG) Log.d(TAG, message, exception)
-    }
-
-    // سطوح i، w، e همیشه فعالند (حتی در release) چون اطلاعات مهم دارند
-    fun i(message: String) = Log.i(TAG, message)
-
-    fun i(message: String, exception: Throwable) = Log.i(TAG, message, exception)
-
-    fun w(message: String) = Log.w(TAG, message)
-
-    fun w(message: String, exception: Throwable) = Log.w(TAG, message, exception)
-
-    fun w(exception: Throwable) = Log.w(TAG, exception)
-
-    fun e(message: String) = Log.e(TAG, message)
-
-    fun e(message: String, exception: Throwable) = Log.e(TAG, message, exception)
-
-}
-
-fun InputStream.use(out: OutputStream) {
-    use { input ->
-        out.use { output ->
-            input.copyTo(output)
+    private fun getTag(): String {
+        val stackTrace = Throwable().stackTrace
+        if (stackTrace.size < 3) return "${PREFIX}Unknown"
+        
+        // استفاده از نام کامل متد به عنوان کلید کش
+        val callerClassName = stackTrace[2].className
+        
+        return tagCache.getOrPut(callerClassName) {
+            val simpleName = callerClassName.substringAfterLast('.')
+            val cleanName = when {
+                simpleName.contains('$') -> simpleName.substringBefore('$')
+                else -> simpleName
+            }
+            "$PREFIX$cleanName"
         }
+    }
+
+    fun v(msg: String) {
+        if (IS_DEBUG) {
+            Log.v(getTag(), msg)
+        }
+    }
+
+    fun v(msg: String, tr: Throwable) {
+        if (IS_DEBUG) {
+            Log.v(getTag(), msg, tr)
+        }
+    }
+
+    fun d(msg: String) {
+        if (IS_DEBUG) {
+            Log.d(getTag(), msg)
+        }
+    }
+
+    fun d(msg: String, tr: Throwable) {
+        if (IS_DEBUG) {
+            Log.d(getTag(), msg, tr)
+        }
+    }
+
+    fun i(msg: String) {
+        Log.i(getTag(), msg)
+    }
+
+    fun i(msg: String, tr: Throwable) {
+        Log.i(getTag(), msg, tr)
+    }
+
+    fun w(msg: String) {
+        Log.w(getTag(), msg)
+    }
+
+    fun w(msg: String, tr: Throwable) {
+        Log.w(getTag(), msg, tr)
+    }
+
+    fun w(tr: Throwable) {
+        Log.w(getTag(), tr)
+    }
+
+    fun e(msg: String) {
+        Log.e(getTag(), msg)
+    }
+
+    fun e(msg: String, tr: Throwable) {
+        Log.e(getTag(), msg, tr)
     }
 }
